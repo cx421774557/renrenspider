@@ -246,10 +246,8 @@ class renrenSpider:
         pubf.close()
 
 if __name__ == '__main__':
-#    email = raw_input('email: ')
-#    password = raw_input('password: ')
-    email = 'dasgut005@163.com'
-    password = 'asdfasdf123!@#'
+    email = raw_input('email: ')
+    password = raw_input('password: ')
     reload(sys)
     sys.setdefaultencoding('utf-8')
     renrenlogin = renrenSpider(email,password)
