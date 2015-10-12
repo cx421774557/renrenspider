@@ -1,6 +1,5 @@
 #!/usr/bin/python -tt
 # encoding=utf-8
-#75行有BUG
 
 import sys
 import urllib
@@ -21,6 +20,7 @@ class renrenSpider:
         self.id = ''
         self.sid = ''
         self.newids = set()
+        self.finished_ids = set()
         try:
             self.cookie = cookielib.CookieJar()
             self.cookieProc = urllib2.HTTPCookieProcessor(self.cookie)
@@ -52,7 +52,18 @@ class renrenSpider:
         print 'now crawling sub list id --> ' + str(cid)
         #配置获取关注者列表URL, 第一步先查看是否存在关注者
         url_getcount = url_base + str(cid) + '/submore?offset=0&limit=1'
-        subdata_str = urllib2.urlopen(url_getcount).read()
+        #reference: http://stackoverflow.com/questions/3515087/detecting-timeout-erros-in-pythons-urllib2-urlopen
+        #reference: http://stackoverflow.com/questions/8072597/skip-url-if-timeout
+        while True:
+            try:
+                subdata = urllib2.urlopen(url_getcount,timeout=10)
+            except (urllib2.HTTPError,urllib2.URLError) as err:
+                time.sleep(3)
+                #不加continue依然会异常退出
+                continue
+            else:
+                subdata_str = subdata.read()
+                break
         subdict = json.loads(subdata_str)
         if json.loads(subdata_str)['code'] != 0:
             #该ID没有关注者 退出函数
@@ -71,10 +82,20 @@ class renrenSpider:
         if subcount < 500:
             url_getsub = url_base + str(cid) + '/submore?offset=0&limit=' + str(subcount)
             print url_getsub
-            subdata_str = urllib2.urlopen(url_getsub).read()
-            print subda
-            #修复ValueError: Invalid control character at: line 1 column 16842 (char 16841)异常
-            subdict = json.loads(subdata_str.replace('\r\n', ''),encoding='utf-8')
+            while True:
+                try:
+                    subdata = urllib2.urlopen(url_getsub,timeout=10)
+                except (urllib2.HTTPError,urllib2.URLError) as err:
+                    time.sleep(3)
+                    continue
+                else:
+                    subdata_str = subdata.read()
+                    break
+
+            #待修复ValueError: Invalid control character at: line 1 column 16842 (char 16841)异常
+            #
+            #subdict = json.loads(subdata_str.replace('\r\n', ''),encoding='utf-8')
+            subdict = json.loads(subdata_str,encoding='utf-8',strict=False)
             #获取当前查询结果中的用户数量
             cnt = len(subdict['data']['userList'])
             for num in range(cnt):
@@ -99,8 +120,16 @@ class renrenSpider:
             while offset_num < subcount:
                 url_getsub = url_base + str(cid) + '/submore?offset=' + str(offset_num) + '&limit=' + str(limit_num)
                 print url_getsub
-                subdata_str = urllib2.urlopen(url_getsub).read()
-                subdict = json.loads(subdata_str.replace('\r\n', ''),encoding='utf-8')
+                while True:
+                    try:
+                        subdata = urllib2.urlopen(url_getsub,timeout=10)
+                    except (urllib2.HTTPError,urllib2.URLError) as err:
+                        time.sleep(3)
+                        continue
+                    else:
+                        subdata_str = subdata.read()
+                        break
+                subdict = json.loads(subdata_str,encoding='utf-8',strict=False)
                 #获取当前查询结果中的用户数量
                 cnt = len(subdict['data']['userList'])
                 for num in range(cnt):
@@ -122,13 +151,22 @@ class renrenSpider:
 
     def getPub(self, cid, filename):
         '''
-        功能跟getSub类似,只是URL及或者的字典key略有不同
+        功能跟getSub类似,只是URL及保存的字典key略有不同
         '''
 
         url_base = 'http://follow.renren.com/list/'
         print 'now crawling pub id--> ' + str(cid)
         url_getcount = url_base + str(cid) + '/pubmore?offset=0&limit=1'
-        pubdata_str = urllib2.urlopen(url_getcount).read()
+        while True:
+            try:
+                pubdata = urllib2.urlopen(url_getcount,timeout=10)
+            except (urllib2.HTTPError,urllib2.URLError) as err:
+                time.sleep(3)
+                continue
+            else:
+                pubdata_str = pubdata.read()
+                break
+
         pubdict = json.loads(pubdata_str)
         if pubdict['code'] != 0:
             pubcount = 0
@@ -146,8 +184,17 @@ class renrenSpider:
         if pubcount < 500:
             url_getpub = url_base + str(cid) + '/pubmore?offset=0&limit=' + str(pubcount)
             print url_getpub
-            pubdata_str = urllib2.urlopen(url_getpub).read()
-            pubdict = json.loads(pubdata_str.replace('\r\n', ''),encoding='utf-8')
+            while True:
+                try:
+                    pubdata = urllib2.urlopen(url_getpub,timeout=10)
+                except (urllib2.HTTPError,urllib2.URLError) as err:
+                    time.sleep(3)
+                    continue
+                else:
+                    pubdata_str = pubdata.read()
+                    break
+
+            pubdict = json.loads(pubdata_str,encoding='utf-8',strict=False)
             #获取当前查询结果中的用户数量
             cnt = len(pubdict['data']['userList'])
             for num in range(cnt):
@@ -167,8 +214,17 @@ class renrenSpider:
             limit_num = 500
             while offset_num < pubcount:
                 url_getpub = url_base + str(cid) + '/pubmore?offset=' + str(offset_num) + '&limit=' + str(limit_num)
-                pubdata_str = urllib2.urlopen(url_getpub).read()
-                pubdict = json.loads(pubdata_str.replace('\r\n', ''),encoding='utf-8')
+                while True:
+                    try:
+                        pubdata = urllib2.urlopen(url_getpub,timeout=10)
+                    except (urllib2.HTTPError,urllib2.URLError) as err:
+                        time.sleep(3)
+                        continue
+                    else:
+                        pubdata_str = pubdata.read()
+                        break
+
+                pubdict = json.loads(pubdata_str,encoding='utf-8',strict=False)
                 #获取当前查询结果中的用户数量
                 cnt = len(pubdict['data']['userList'])
                 for num in range(cnt):
@@ -190,8 +246,10 @@ class renrenSpider:
         pubf.close()
 
 if __name__ == '__main__':
-    email = raw_input('email: ')
-    password = raw_input('password: ')
+#    email = raw_input('email: ')
+#    password = raw_input('password: ')
+    email = 'dasgut005@163.com'
+    password = 'asdfasdf123!@#'
     reload(sys)
     sys.setdefaultencoding('utf-8')
     renrenlogin = renrenSpider(email,password)
@@ -200,27 +258,30 @@ if __name__ == '__main__':
     #start_id = 725807834
     #start_id = 326198288
     #start_id = 853016989
-    start_id = 440818854
+    #start_id = 440818854
+    start_id = 319383233
     subfile = str(start_id)+'_sub.txt'
     renrenlogin.getSub(start_id, subfile)
     pubfile = str(start_id)+'_pub.txt'
     renrenlogin.getPub(start_id, pubfile)
     #获取已经完成扫描的用户ID,放到集合中
-    finished_ids = set()
-    finished_ids.add(start_id)
-    print finished_ids
+    renrenlogin.finished_ids.add(start_id)
+    print renrenlogin.finished_ids
     print renrenlogin.newids
 
-    try:
-        while True:
-            needtocrawlids = renrenlogin.newids - finished_ids
-            for cid in needtocrawlids:
-                renrenlogin.getSub(cid, str(start_id)+'_sub_1.txt')
-                renrenlogin.getPub(cid, str(start_id)+'_pub_1.txt')
-                finished_ids.add(start_id)
-            with open('finished_ids.txt', 'a') as f:
-                f.write(','.join(str(x) for x in finished_ids))
-    except:
-        raise
-    finally:
-        print 'Done'
+    while True:
+        needtocrawlids = renrenlogin.newids - renrenlogin.finished_ids
+        for cid in needtocrawlids:
+            renrenlogin.getSub(cid, str(start_id)+'_sub_1.txt')
+            renrenlogin.getPub(cid, str(start_id)+'_pub_1.txt')
+            #更新已完成的ID集合
+            renrenlogin.finished_ids.add(cid)
+            #print str(renrenlogin.finished_ids)
+            #打印已经完成的ID总数
+            print str(len(renrenlogin.finished_ids))+' FINISHED'
+            #抓取完成一组ID之后,把已经抓取成功的ID记录下文件中,其实最好做成抓完一个ID立即保存,但是为了防止文件IO过多,暂时这样处理.
+            #每完成20个ID, 保存一次
+            if len(renrenlogin.finished_ids) % 20 == 0:
+                with open('finished_ids.txt', 'a') as f:
+                    f.write(','.join(str(x) for x in renrenlogin.finished_ids))
+    print 'Done'
