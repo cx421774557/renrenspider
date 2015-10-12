@@ -1,6 +1,7 @@
 #!/usr/bin/python -tt
 # encoding=utf-8
-
+#待优化 1, 减少文件写入操作
+#可以通过给函数传递一个ID的LIST,20个一组,完成后再保存,待以后改进
 import sys
 import urllib
 import urllib2
@@ -64,8 +65,9 @@ class renrenSpider:
             else:
                 subdata_str = subdata.read()
                 break
+        #待修复:这里偶尔会报ValueError: No JSON object could be decoded
         subdict = json.loads(subdata_str)
-        if json.loads(subdata_str)['code'] != 0:
+        if subdict['code'] != 0:
             #该ID没有关注者 退出函数
             subcount = 0
             return
@@ -93,8 +95,8 @@ class renrenSpider:
                     break
 
             #待修复ValueError: Invalid control character at: line 1 column 16842 (char 16841)异常
-            #
-            #subdict = json.loads(subdata_str.replace('\r\n', ''),encoding='utf-8')
+            #subdict = json.loads(subdata_str.replace('\r\n', ''),encoding='utf-8') 这个方法无效,也许是要把'\n'换成'',没有试验
+            #暂时用下面的方法
             subdict = json.loads(subdata_str,encoding='utf-8',strict=False)
             #获取当前查询结果中的用户数量
             cnt = len(subdict['data']['userList'])
@@ -280,6 +282,8 @@ if __name__ == '__main__':
             #抓取完成一组ID之后,把已经抓取成功的ID记录下文件中,其实最好做成抓完一个ID立即保存,但是为了防止文件IO过多,暂时这样处理.
             #每完成20个ID, 保存一次
             if len(renrenlogin.finished_ids) % 20 == 0:
-                with open('finished_ids.txt', 'a') as f:
-                    f.write(','.join(str(x) for x in renrenlogin.finished_ids))
+                #这里应该用w方式清空文件,因为finished_ids没有清空,不能用a方式
+                with open('finished_ids.txt', 'w') as f:
+                    #这里用'\n'代替',' 防止先后两次写入的项没有以','分隔开
+                    f.write('\n'.join(str(x) for x in renrenlogin.finished_ids))
     print 'Done'
