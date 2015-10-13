@@ -58,15 +58,21 @@ class renrenSpider:
         while True:
             try:
                 subdata = urllib2.urlopen(url_getcount,timeout=10)
-            except (urllib2.HTTPError,urllib2.URLError) as err:
+            #增加urllib2.socket.timeout异常处理
+            except (urllib2.HTTPError,urllib2.URLError,urllib2.socket.timeout) as err:
                 time.sleep(3)
+                print 'something is wrong with your networking'
                 #不加continue依然会异常退出
                 continue
             else:
                 subdata_str = subdata.read()
                 break
         #待修复:这里偶尔会报ValueError: No JSON object could be decoded
-        subdict = json.loads(subdata_str)
+        #ValueError: Unterminated string starting at: line 1 column 50098 (char 50097)
+        try:
+            subdict = json.loads(subdata_str)
+        except ValueError:
+            return
         if subdict['code'] != 0:
             #该ID没有关注者 退出函数
             subcount = 0
@@ -87,8 +93,9 @@ class renrenSpider:
             while True:
                 try:
                     subdata = urllib2.urlopen(url_getsub,timeout=10)
-                except (urllib2.HTTPError,urllib2.URLError) as err:
+                except (urllib2.HTTPError,urllib2.URLError,urllib2.socket.timeout) as err:
                     time.sleep(3)
+                    print 'something is wrong with your networking'
                     continue
                 else:
                     subdata_str = subdata.read()
@@ -96,8 +103,11 @@ class renrenSpider:
 
             #待修复ValueError: Invalid control character at: line 1 column 16842 (char 16841)异常
             #subdict = json.loads(subdata_str.replace('\r\n', ''),encoding='utf-8') 这个方法无效,也许是要把'\n'换成'',没有试验
-            #暂时用下面的方法
-            subdict = json.loads(subdata_str,encoding='utf-8',strict=False)
+            #暂时用下面的方法 json.loads(restrict=False)貌似也不对,应该就是下载的数据不完整造成的
+            try:
+                subdict = json.loads(subdata_str,encoding='utf-8')
+            except ValueError:
+                return
             #获取当前查询结果中的用户数量
             cnt = len(subdict['data']['userList'])
             for num in range(cnt):
@@ -125,13 +135,18 @@ class renrenSpider:
                 while True:
                     try:
                         subdata = urllib2.urlopen(url_getsub,timeout=10)
-                    except (urllib2.HTTPError,urllib2.URLError) as err:
+                    except (urllib2.HTTPError,urllib2.URLError,urllib2.socket.timeout) as err:
                         time.sleep(3)
+                        print 'something is wrong with your networking'
                         continue
                     else:
                         subdata_str = subdata.read()
                         break
-                subdict = json.loads(subdata_str,encoding='utf-8',strict=False)
+                try:
+                    subdict = json.loads(subdata_str,encoding='utf-8')
+                except ValueError:
+                    print 'load json data error...something is bad with the server or maybe your network is bad'
+                    return
                 #获取当前查询结果中的用户数量
                 cnt = len(subdict['data']['userList'])
                 for num in range(cnt):
@@ -162,14 +177,19 @@ class renrenSpider:
         while True:
             try:
                 pubdata = urllib2.urlopen(url_getcount,timeout=10)
-            except (urllib2.HTTPError,urllib2.URLError) as err:
+            except (urllib2.HTTPError,urllib2.URLError,urllib2.socket.timeout) as err:
                 time.sleep(3)
+                print 'something is wrong with your networking'
                 continue
             else:
                 pubdata_str = pubdata.read()
                 break
 
-        pubdict = json.loads(pubdata_str)
+        try:
+            pubdict = json.loads(pubdata_str)
+        except ValueError:
+            print 'load json data error...something is bad with the server or maybe your network is bad'
+            return
         if pubdict['code'] != 0:
             pubcount = 0
             return
@@ -189,14 +209,19 @@ class renrenSpider:
             while True:
                 try:
                     pubdata = urllib2.urlopen(url_getpub,timeout=10)
-                except (urllib2.HTTPError,urllib2.URLError) as err:
+                except (urllib2.HTTPError,urllib2.URLError,urllib2.socket.timeout) as err:
                     time.sleep(3)
+                    print 'something is wrong with your networking'
                     continue
                 else:
                     pubdata_str = pubdata.read()
                     break
 
-            pubdict = json.loads(pubdata_str,encoding='utf-8',strict=False)
+            try:
+                pubdict = json.loads(pubdata_str,encoding='utf-8')
+            except ValueError:
+                print 'load json data error...something is bad with the server or maybe your network is bad'
+                return
             #获取当前查询结果中的用户数量
             cnt = len(pubdict['data']['userList'])
             for num in range(cnt):
@@ -219,14 +244,18 @@ class renrenSpider:
                 while True:
                     try:
                         pubdata = urllib2.urlopen(url_getpub,timeout=10)
-                    except (urllib2.HTTPError,urllib2.URLError) as err:
+                    except (urllib2.HTTPError,urllib2.URLError,urllib2.socket.timeout) as err:
                         time.sleep(3)
+                        print 'something is wrong with your networking'
                         continue
                     else:
                         pubdata_str = pubdata.read()
                         break
-
-                pubdict = json.loads(pubdata_str,encoding='utf-8',strict=False)
+                try:
+                    pubdict = json.loads(pubdata_str,encoding='utf-8',strict=False)
+                except:
+                    print 'load json data error...something is bad with the server or maybe your network is bad'
+                    return
                 #获取当前查询结果中的用户数量
                 cnt = len(pubdict['data']['userList'])
                 for num in range(cnt):
@@ -259,7 +288,8 @@ if __name__ == '__main__':
     #start_id = 326198288
     #start_id = 853016989
     #start_id = 440818854
-    start_id = 319383233
+    #start_id = 319383233
+    start_id = 271038494
     subfile = str(start_id)+'_sub.txt'
     renrenlogin.getSub(start_id, subfile)
     pubfile = str(start_id)+'_pub.txt'
@@ -286,4 +316,3 @@ if __name__ == '__main__':
                 with open('finished_ids.txt', 'w') as f:
                     #这里用'\n'代替',' 防止先后两次写入的项没有以','分隔开
                     f.write('\n'.join(str(x) for x in renrenlogin.finished_ids))
-    print 'Done'
