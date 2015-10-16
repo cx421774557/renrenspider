@@ -2,6 +2,7 @@
 # encoding=utf-8
 #待优化 1, 减少文件写入操作
 #可以通过给函数传递一个ID的LIST,20个一组,完成后再保存,待以后改进
+#BUG 见行274附近 getSub当初逻辑是正确的,getPub逻辑有错误,现在修正,待测试
 import sys
 import urllib
 import urllib2
@@ -270,9 +271,11 @@ class renrenSpider:
                     pubdata_summary['subby'] = cid
                     pubdata_list.append(pubdata_summary)
                     self.newids.add(pubdata_summary['id'])
-                pubf.write(json.dumps(pubdata_list))
                 offset_num += 500
                 print 'id = ' + str(cid) + ', pubcount = ' + str(pubcount) + ', offset = ' + str(offset_num)
+            #这里修正一个BUG,就是500个写入一次的时候是一个list,下一个500又是单独一个list,需要把所有list组成一个,存到一行中,即所有抓取完成才写入
+            #还有待于测试
+            pubf.write(json.dumps(pubdata_list))
         pubf.write('\n')
         pubf.close()
 
@@ -284,11 +287,6 @@ if __name__ == '__main__':
     renrenlogin = renrenSpider(email,password)
     renrenlogin.login()
     #抓取该ID的所有关注者和被关注者,必须两者均有至少一个人
-    #start_id = 725807834
-    #start_id = 326198288
-    #start_id = 853016989
-    #start_id = 440818854
-    #start_id = 319383233
     start_id = 271038494
     subfile = str(start_id)+'_sub.txt'
     renrenlogin.getSub(start_id, subfile)

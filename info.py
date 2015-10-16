@@ -2,7 +2,6 @@
 # encoding=utf-8
 #http://www.renren.com/newnamecard?uid=882835050
 #待解决问题,查看100个同学的页面后,需要输入验证码
-
 import sys
 import urllib
 import urllib2
@@ -132,8 +131,8 @@ class renrenInfo:
                 pfd.write('\n')
 
 if __name__ == '__main__':
-    email = raw_input('email :')
-    password = raw_input('password :')
+    email = raw_input('email: ')
+    password = raw_input('password: ')
     reload(sys)
     sys.setdefaultencoding('utf-8')
     renrenlogin = renrenInfo(email, password)
@@ -146,4 +145,4 @@ if __name__ == '__main__':
         fidslist.append(int(line))
     #print fidslist
     ids_fd.close()
-    renrenlogin.getInfo(fidslist, 'test.txt')
+    renrenlogin.getInfo(fidslist, 'info.txt')

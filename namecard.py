@@ -8,7 +8,7 @@ import urllib2
 import cookielib
 import json
 import time
-import re
+import codecs
 
 from bs4 import BeautifulSoup
 
@@ -74,13 +74,16 @@ class nameCard:
                 name_summary['region'] = name_dict['region']
                 name_summary['authInfo'] = name_dict['authInfo']
 
-                #print name_summary
-                cfd.write(str(name_summary))
+                print name_summary
+                #cfd.write(str(name_summary))
+                #改用这种方式来存储中文
+                #reference http://www.bubuko.com/infodetail-1115635.html
+                cfd.write(json.dumps(name_summary, ensure_ascii=False))
                 cfd.write('\n')
 
 if __name__ == '__main__':
-    email = raw_input('email :')
-    password = raw_input('password :)
+    email = raw_input('email: ')
+    password = raw_input('password: ')
     reload(sys)
     sys.setdefaultencoding('utf-8')
     renrenlogin = nameCard(email, password)
